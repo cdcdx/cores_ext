@@ -1,0 +1,9 @@
+.DS_STORE
+.vscode
+.idea
+target
+
+*.tar.gz
+*.snap
+*.zip
+*.log
