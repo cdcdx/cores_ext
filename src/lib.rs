@@ -79,11 +79,13 @@ pub fn bind_cpu_ids(mut start:usize, mut end:usize) {
             io::Error::last_os_error()
         );
     }
-    // println!("bind_cpu - pid:{} cpus:{:?}-{:?}", get_pid(), start, end);
+    if check_rustlog() {
+        println!("bind_core - pid:{} cpus:{:?}~{:?}", get_pid(), start, end);
+    }
 }
 
 /// Returns a list of CPU ids
-pub fn get_cpu_ids(mark: &str) -> Vec<usize> {
+pub fn get_cpu_ids(mut mark: &str) -> Vec<usize> {
     let mut cpus = Vec::new();
     let mut cpu_set: cpu_set_t;
     let r = unsafe {
@@ -98,16 +100,39 @@ pub fn get_cpu_ids(mark: &str) -> Vec<usize> {
             }
         }
     }
-    println!("{} - pid:{} cpus:{} {:?}", mark, get_pid(), cpus.len(), cpus);
+    if check_rustlog() {
+        if mark.is_empty() {
+            mark = "get_core"
+        }
+        println!("{} - pid:{} cpus:{} {:?}", mark, get_pid(), cpus.len(), cpus);
+    }
     return cpus;
 }
 
 /// Returns current process_id
-pub fn get_pid() -> u32 {
+fn get_pid() -> u32 {
     let tid = unsafe { syscall(SYS_gettid) } as u32;
     return tid;
 }
 
+/// Returns the environment variable `RUST_LOG` value
+fn check_rustlog() -> bool {
+    if let Ok(used) = std::env::var("RUST_LOG") {
+        if used.is_empty() {
+            false
+        } else {
+            match used.to_uppercase().as_str() {
+                "TRACE" | "DEBUG" => true,
+                _ => match used.parse::<usize>() {
+                    Ok(num) => num != 0,
+                    Err(_) => false,
+                },
+            }
+        }
+    } else {
+        false
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -119,6 +144,8 @@ mod tests {
         let start = cpu.execution_units - cpu.physical_cores*cpu.sockets;
         let end = cpu.execution_units;
         bind_cpu_ids(start, end);
-        get_cpu_ids("test");
+
+        let cpus = get_cpu_ids("");
+        println!("cores:{} {:?}", cpus.len(), cpus);
     }
 }
