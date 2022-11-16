@@ -3,7 +3,7 @@
 ## Quote
 ```toml
 [dependencies]
-cores_ext = { version = "0.1.0" }
+cores_ext = { git = "https://github.com/cdcdx/cores_ext", branch = "master" }
 ```
 
 ## Usage
